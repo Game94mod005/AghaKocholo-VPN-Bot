@@ -30,8 +30,14 @@ from orders import (
     create_order,
     add_receipt,
     approve_order,
-    reject_order,
-    save_config
+    reject_order
+)
+
+from admin import (
+    open_admin,
+    approve_order as admin_approve,
+    reject_order as admin_reject,
+    receive_config
 )
 
 
@@ -40,78 +46,78 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
 
-# نگهداری سفارش آخر کاربر
-user_last_order = {}
+# نگهداری سفارش‌های فعال
+active_orders = {}
 
 
-# =========================
+# =====================
 # START
-# =========================
+# =====================
 
 @dp.message(F.text == "/start")
 async def start(message: Message):
 
     await message.answer(
         "🔥💎 AghaKocholo VPN 💎🔥\n\n"
+
         f"سلام {message.from_user.first_name} 👋\n\n"
-        "🚀 خرید VPN پرسرعت\n"
+
+        "🚀 فروش سرویس VPN پرسرعت\n"
         "🌍 لوکیشن‌های مختلف\n"
         "⚡ فعال‌سازی سریع\n\n"
-        "انتخاب کنید 👇",
+
+        "از منوی زیر انتخاب کن 👇",
 
         reply_markup=main_menu()
     )
 
 
-
-# =========================
+# =====================
 # ADMIN
-# =========================
+# =====================
 
 @dp.message(F.text == "/admin")
 async def admin(message: Message):
 
-    if message.from_user.id == ADMIN_ID:
-
-        from admin import open_admin
-
-        await open_admin(message)
+    await open_admin(message)
 
 
 
-# =========================
-# PLAN
-# =========================
+# =====================
+# خرید Diamond
+# =====================
 
 @dp.callback_query(F.data == "diamond")
 async def diamond(callback: CallbackQuery):
 
     user_orders[callback.from_user.id] = {
-        "type":"diamond"
+        "type": "diamond"
     }
-
 
     await callback.message.answer(
         "💎 پلن الماس انتخاب شد\n\n"
-        "🌍 لوکیشن را انتخاب کنید:",
+        "🌍 کشور را انتخاب کن:",
         reply_markup=locations()
     )
 
     await callback.answer()
 
 
+
+# =====================
+# خرید Gold
+# =====================
 
 @dp.callback_query(F.data == "gold")
 async def gold(callback: CallbackQuery):
 
     user_orders[callback.from_user.id] = {
-        "type":"gold"
+        "type": "gold"
     }
-
 
     await callback.message.answer(
         "👑 پلن طلایی انتخاب شد\n\n"
-        "🌍 لوکیشن را انتخاب کنید:",
+        "🌍 کشور را انتخاب کن:",
         reply_markup=locations()
     )
 
@@ -119,27 +125,25 @@ async def gold(callback: CallbackQuery):
 
 
 
-# =========================
-# LOCATION
-# =========================
+# =====================
+# کشور
+# =====================
 
 @dp.callback_query(F.data.startswith("loc_"))
-async def loc(callback: CallbackQuery):
+async def choose_location(callback: CallbackQuery):
 
     location = callback.data.replace(
         "loc_",
         ""
     )
 
-
     set_location(
         callback.from_user.id,
         location
     )
 
-
     await callback.message.answer(
-        "📦 حجم را انتخاب کنید:",
+        "📦 حجم سرویس را انتخاب کن:",
         reply_markup=volumes()
     )
 
@@ -147,12 +151,12 @@ async def loc(callback: CallbackQuery):
 
 
 
-# =========================
-# VOLUME + ORDER
-# =========================
+# =====================
+# حجم و قیمت
+# =====================
 
 @dp.callback_query(F.data.startswith("vol_"))
-async def volume(callback: CallbackQuery):
+async def choose_volume(callback: CallbackQuery):
 
     volume = callback.data.replace(
         "vol_",
@@ -178,7 +182,7 @@ async def volume(callback: CallbackQuery):
     )
 
 
-    user_last_order[
+    active_orders[
         callback.from_user.id
     ] = order_id
 
@@ -186,17 +190,17 @@ async def volume(callback: CallbackQuery):
 
     await callback.message.answer(
 
-        "✅ سفارش شما ساخته شد\n\n"
+        "✅ سفارش ساخته شد 🔥\n\n"
 
         f"📦 حجم: {volume}\n"
         f"💰 مبلغ: {price:,} تومان\n\n"
 
-        "💳 پرداخت کنید:\n"
+        "💳 اطلاعات پرداخت:\n"
 
         f"{CARD_NUMBER}\n"
         f"👤 {CARD_OWNER}\n\n"
 
-        "بعد از پرداخت عکس رسید را ارسال کنید 📸"
+        "بعد از پرداخت عکس رسید را بفرست 📸"
 
     )
 
@@ -205,21 +209,21 @@ async def volume(callback: CallbackQuery):
 
 
 
-# =========================
-# RECEIPT
-# =========================
+# =====================
+# دریافت رسید
+# =====================
 
 @dp.message(F.photo)
-async def photo(message: Message):
+async def receive_receipt(message: Message):
 
     user_id = message.from_user.id
 
 
-    if user_id not in user_last_order:
+    if user_id not in active_orders:
         return
 
 
-    order_id = user_last_order[user_id]
+    order_id = active_orders[user_id]
 
 
     photo_id = message.photo[-1].file_id
@@ -239,14 +243,13 @@ async def photo(message: Message):
 
         caption=
 
-        "🔔 سفارش جدید\n\n"
+        "🔔 سفارش جدید 🔔\n\n"
 
-        f"👤 کاربر:\n"
-        f"{message.from_user.full_name}\n\n"
+        f"👤 کاربر:\n{message.from_user.full_name}\n\n"
 
         f"🆔 سفارش: #{order_id}\n\n"
 
-        "بررسی کنید 👇",
+        "بررسی پرداخت 👇",
 
         reply_markup=receipt_buttons(order_id)
 
@@ -260,16 +263,12 @@ async def photo(message: Message):
 
 
 
-# =========================
-# ADMIN APPROVE / REJECT
-# =========================
+# =====================
+# تایید پرداخت
+# =====================
 
 @dp.callback_query(F.data.startswith("approve_"))
 async def approve(callback: CallbackQuery):
-
-    if callback.from_user.id != ADMIN_ID:
-        return
-
 
     order_id = int(
         callback.data.split("_")[1]
@@ -279,9 +278,9 @@ async def approve(callback: CallbackQuery):
     await approve_order(order_id)
 
 
-    await callback.message.answer(
-        "✅ پرداخت تایید شد\n\n"
-        "حالا کانفیگ را ارسال کنید."
+    await admin_approve(
+        callback,
+        order_id
     )
 
 
@@ -289,12 +288,12 @@ async def approve(callback: CallbackQuery):
 
 
 
+# =====================
+# رد پرداخت
+# =====================
+
 @dp.callback_query(F.data.startswith("reject_"))
 async def reject(callback: CallbackQuery):
-
-    if callback.from_user.id != ADMIN_ID:
-        return
-
 
     order_id = int(
         callback.data.split("_")[1]
@@ -304,8 +303,9 @@ async def reject(callback: CallbackQuery):
     await reject_order(order_id)
 
 
-    await callback.message.answer(
-        "❌ پرداخت رد شد."
+    await admin_reject(
+        callback,
+        order_id
     )
 
 
@@ -313,16 +313,27 @@ async def reject(callback: CallbackQuery):
 
 
 
-# =========================
-# MAIN
-# =========================
+# =====================
+# کانفیگ ادمین
+# =====================
+
+@dp.message(F.text.startswith("vless://"))
+async def config(message: Message):
+
+    await receive_config(message)
+
+
+
+# =====================
+# RUN
+# =====================
 
 async def main():
 
     await init_db()
 
     print(
-        "🔥 AghaKocholo VPN PRO ONLINE"
+        "🔥 AghaKocholo VPN PRO Running"
     )
 
     await dp.start_polling(bot)
@@ -330,5 +341,4 @@ async def main():
 
 
 if __name__ == "__main__":
-
     asyncio.run(main())
