@@ -1,19 +1,19 @@
-from database import Order, async_session
+from database import async_session, Order
+from sqlalchemy import select
 
-
-# ساخت سفارش جدید
 
 async def create_order(
     user_id,
-    plan_id
+    plan_name,
+    price
 ):
 
     async with async_session() as session:
 
         order = Order(
             user_id=user_id,
-            plan_id=plan_id,
-            status="waiting",
+            plan_id=0,
+            status="waiting_receipt",
             receipt="",
             config=""
         )
@@ -22,15 +22,15 @@ async def create_order(
 
         await session.commit()
 
+        await session.refresh(order)
+
         return order.id
 
 
 
-# ذخیره رسید پرداخت
-
-async def save_receipt(
+async def add_receipt(
     order_id,
-    receipt
+    receipt_id
 ):
 
     async with async_session() as session:
@@ -42,14 +42,12 @@ async def save_receipt(
 
         if order:
 
-            order.receipt = receipt
+            order.receipt = receipt_id
             order.status = "checking"
 
             await session.commit()
 
 
-
-# تایید پرداخت
 
 async def approve_order(
     order_id
@@ -70,8 +68,6 @@ async def approve_order(
 
 
 
-# رد پرداخت
-
 async def reject_order(
     order_id
 ):
@@ -90,8 +86,6 @@ async def reject_order(
             await session.commit()
 
 
-
-# ذخیره کانفیگ
 
 async def save_config(
     order_id,
