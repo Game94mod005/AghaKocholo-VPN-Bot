@@ -1,7 +1,15 @@
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import Message, CallbackQuery
 
 from config import ADMIN_ID
-from keyboards import admin_menu, receipt_buttons
+from keyboards import admin_menu
+
+from config_sender import (
+    set_waiting_config,
+    get_user_by_order,
+    remove_order
+)
+
+from orders import save_config
 
 
 async def open_admin(message: Message):
@@ -11,57 +19,58 @@ async def open_admin(message: Message):
 
 
     await message.answer(
-        "👑🔥 AghaKocholo Admin Panel\n\n"
-
-        "📊 داشبورد مدیریت\n"
-        "━━━━━━━━━━━━\n"
-
-        "🛒 سفارش‌ها\n"
-        "💰 قیمت‌ها\n"
-        "👥 کاربران\n"
-        "📢 تبلیغات",
+        "👑🔥 AghaKocholo Admin\n\n"
+        "مدیریت کامل ربات فعال است 🚀",
 
         reply_markup=admin_menu()
     )
 
 
 
-async def admin_button(callback: CallbackQuery):
+async def approve_payment(callback, order_id):
 
     if callback.from_user.id != ADMIN_ID:
-
-        await callback.answer(
-            "❌ دسترسی ندارید"
-        )
         return
 
 
-    if callback.data == "admin_stats":
+    # اینجا بعداً از دیتابیس کاربر را می‌گیریم
 
-        await callback.message.answer(
-            "📊 آمار ربات\n\n"
-            "👥 کاربران: 0\n"
-            "🛒 سفارش‌ها: 0\n"
-            "💰 فروش: 0 تومان\n\n"
-            "🔥 سیستم فعال است"
+    await callback.message.answer(
+
+        "✅ پرداخت تایید شد\n\n"
+        "📡 حالا کانفیگ را ارسال کنید:\n"
+        "مثال:\n"
+        "vless://xxxx"
+
+    )
+
+
+    set_waiting_config(
+        order_id,
+        callback.from_user.id
+    )
+
+
+
+async def receive_config(message: Message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+
+    for order_id,user_id in list(waiting_config.items()):
+
+        await message.bot.send_message(
+            user_id,
+
+            "🎉🔥 سرویس شما فعال شد\n\n"
+            "🔗 کانفیگ شما:\n\n"
+            f"{message.text}\n\n"
+            "⏳ اعتبار: 30 روز\n\n"
+            "❤️ ممنون از خرید شما"
+
         )
 
+        remove_order(order_id)
 
-    elif callback.data == "admin_prices":
-
-        await callback.message.answer(
-            "💰 مدیریت قیمت\n\n"
-
-            "💎 Diamond\n"
-            "5GB : 20,000\n"
-            "10GB : 40,000\n"
-            "15GB : 60,000\n"
-            "20GB : 80,000\n\n"
-
-            "👑 Gold\n"
-            "5GB : 50,000\n"
-            "10GB : 100,000"
-        )
-
-
-    await callback.answer()
+        break
