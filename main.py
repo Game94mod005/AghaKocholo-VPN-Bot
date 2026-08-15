@@ -1,5 +1,4 @@
 import asyncio
-import os
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery
@@ -13,18 +12,20 @@ bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
 
+# شروع ربات
 @dp.message(F.text == "/start")
 async def start(message: Message):
 
     await message.answer(
         f"🔥 AghaKocholo VPN\n\n"
         f"سلام {message.from_user.first_name} 👋\n\n"
-        f"به ربات فروش VPN خوش آمدید.\n\n"
-        f"یکی از گزینه‌ها را انتخاب کنید:",
+        "به ربات فروش VPN خوش آمدید.\n\n"
+        "یکی از گزینه‌ها را انتخاب کنید:",
         reply_markup=main_menu()
     )
 
 
+# پنل ادمین
 @dp.message(F.text == "/admin")
 async def admin(message: Message):
 
@@ -32,49 +33,50 @@ async def admin(message: Message):
 
         await message.answer(
             "👑 پنل مدیریت AghaKocholo\n\n"
-            "به پنل خوش آمدید.",
+            "دسترسی ادمین فعال شد ✅",
             reply_markup=admin_menu()
         )
 
     else:
-
         await message.answer(
-            "❌ شما دسترسی ادمین ندارید."
+            "❌ شما ادمین نیستید."
         )
 
 
+# خرید VPN
 @dp.callback_query(F.data == "buy")
 async def buy(callback: CallbackQuery):
 
     await callback.message.answer(
-        "🛒 انتخاب پلن VPN\n\n"
+        "🛒 خرید VPN\n\n"
 
         "🇩🇪 Germany Premium\n"
-        "📦 20GB\n"
-        "⏳ 30 روز\n"
-        "💰 80,000 تومان\n\n"
+        "📦 حجم: 20GB\n"
+        "⏳ مدت: 30 روز\n"
+        "💰 قیمت: 80,000 تومان\n\n"
 
-        "برای خرید مبلغ را پرداخت کنید:\n\n"
-
-        f"💳 کارت:\n{CARD_NUMBER}\n\n"
+        "💳 اطلاعات پرداخت:\n"
+        f"{CARD_NUMBER}\n\n"
         f"👤 به نام:\n{CARD_OWNER}\n\n"
 
-        "بعد از پرداخت، عکس رسید را ارسال کنید."
+        "بعد از پرداخت، عکس رسید را ارسال کنید 📸"
     )
 
     await callback.answer()
 
 
+# سرویس ها
 @dp.callback_query(F.data == "services")
 async def services(callback: CallbackQuery):
 
     await callback.message.answer(
-        "📦 شما هنوز سرویسی ندارید."
+        "📦 هنوز هیچ سرویس فعالی ندارید."
     )
 
     await callback.answer()
 
 
+# پشتیبانی
 @dp.callback_query(F.data == "support")
 async def support(callback: CallbackQuery):
 
@@ -91,15 +93,10 @@ async def main():
 
     await init_db()
 
-    print("🔥 AghaKocholo VPN Started")
+    print("🔥 AghaKocholo VPN Bot Started")
 
     await dp.start_polling(bot)
 
-
-
-if __name__ == "__main__":
-    asyncio.run(main())    print("🔥 AghaKocholo VPN Bot Started")
-    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
